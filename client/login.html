@@ -1,14 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{
+  background:#121212;
+  color:white;
+  text-align:center;
+  font-family:Arial;
+}
+
+.card{
+  margin-top:100px;
+}
+
+input{
+  padding:12px;
+  margin:10px;
+  width:80%;
+  border-radius:10px;
+  border:none;
+}
+
+button{
+  padding:12px;
+  width:85%;
+  border:none;
+  border-radius:10px;
+  background:#3498db;
+  color:white;
+  font-size:18px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h2>🔐 Login Host</h2>
+
 <input id="user" placeholder="Usuario">
 <input id="pass" type="password" placeholder="Password">
+
 <button onclick="login()">Entrar</button>
+
+<p id="msg" style="color:red;"></p>
+</div>
 
 <script>
 function login(){
-  if(user.value === "admin" && pass.value === "1234"){
+
+  const usuario = document.getElementById("user").value.trim();
+  const password = document.getElementById("pass").value.trim();
+
+  if(usuario === "admin" && password === "1234"){
+    
     localStorage.setItem("auth","ok");
-    window.location="host.html";
+    window.location.href = "host.html";
+
   }else{
-    alert("Credenciales incorrectas");
+    document.getElementById("msg").innerText = "Usuario o contraseña incorrectos";
   }
 }
 </script>
+
+</body>
+</html>
