@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Jugador</title>
+<style>
+body{background:#111;color:white;text-align:center;}
+button{width:45%;height:120px;margin:10px;font-size:20px;}
+</style>
+</head>
+
+<body>
+
+<h2>Unirse</h2>
+<input id="nombre" placeholder="Nombre">
+<input id="pin" placeholder="PIN">
+<button onclick="join()">Entrar</button>
+
+<h2 id="q"></h2>
+<h1 id="timer"></h1>
+<div id="ops"></div>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+
+const socket = io("https://TU-BACKEND.onrender.com");
+
+function join(){
+  socket.emit("joinGame", {
+    nombre: nombre.value,
+    pin: pin.value
+  });
+}
+
+socket.on("question",(data)=>{
+  q.innerText = data.pregunta;
+
+  ops.innerHTML = data.opciones.map((o,i)=>
+    `<button onclick="ans(${i})">${o}</button>`
+  ).join("");
+});
+
+socket.on("timer",(t)=>{
+  timer.innerText = t;
+});
+
+function ans(i){
+  socket.emit("answer", {
+    pin: pin.value,
+    respuesta: i,
+    correcta: 0
+  });
+}
+
+</script>
+</body>
+</html>

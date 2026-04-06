@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h1>🏆 Ranking</h1>
+<ul id="r"></ul>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+
+const socket = io("https://TU-BACKEND.onrender.com");
+
+socket.on("ranking",(data)=>{
+  r.innerHTML = data.map(p=>`<li>${p.nombre} - ${p.puntos}</li>`).join("");
+});
+
+</script>
+
+</body>
+</html>
