@@ -1,82 +1,105 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quiz PRO</title>
+<title>Quiz Live</title>
 
 <style>
 body{
   margin:0;
-  font-family:Arial;
-  background:#121212;
+  font-family:'Segoe UI', sans-serif;
+  background: linear-gradient(135deg,#1f1c2c,#928dab);
   color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+
+.card{
+  width:95%;
+  max-width:500px;
+  background: rgba(0,0,0,0.4);
+  padding:20px;
+  border-radius:20px;
+  box-shadow:0 0 20px rgba(0,0,0,0.5);
+  backdrop-filter: blur(10px);
   text-align:center;
 }
 
-.container{
-  padding:20px;
-}
-
 input{
-  padding:10px;
+  width:90%;
+  padding:12px;
   margin:5px;
-  width:80%;
-  border-radius:10px;
   border:none;
+  border-radius:10px;
 }
 
 button{
+  padding:12px;
   border:none;
-  border-radius:15px;
-  font-size:18px;
-  color:white;
+  border-radius:10px;
+  margin:10px;
+  cursor:pointer;
   transition:0.2s;
 }
 
-button:active{
-  transform:scale(0.95);
+button:hover{
+  transform:scale(1.05);
 }
 
 .grid{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:10px;
-  margin-top:20px;
 }
 
 .btn{
-  height:120px;
+  height:100px;
+  font-size:18px;
+  font-weight:bold;
 }
 
-.red{background:#e74c3c;}
-.blue{background:#3498db;}
-.green{background:#2ecc71;}
-.yellow{background:#f1c40f;}
+.red{background:#ff4757;}
+.blue{background:#1e90ff;}
+.green{background:#2ed573;}
+.yellow{background:#ffa502;}
 
 #timer{
   font-size:50px;
-  margin:20px;
+  margin:10px;
   animation:pulse 1s infinite;
 }
 
 @keyframes pulse{
   0%{transform:scale(1);}
-  50%{transform:scale(1.1);}
+  50%{transform:scale(1.2);}
   100%{transform:scale(1);}
+}
+
+.fade{
+  animation:fadeIn 0.5s;
+}
+
+@keyframes fadeIn{
+  from{opacity:0;}
+  to{opacity:1;}
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="card fade">
 
-<h2>Unirse</h2>
-<input id="nombre" placeholder="Nombre">
-<input id="pin" placeholder="PIN">
+<h2>🎮 Quiz Live</h2>
+
+<input id="nombre" placeholder="Tu nombre">
+<input id="pin" placeholder="PIN del juego">
+
 <button onclick="join()">Entrar</button>
 
-<h2 id="q"></h2>
+<h3 id="q"></h3>
 <div id="timer"></div>
 
 <div class="grid" id="ops"></div>
@@ -84,9 +107,9 @@ button:active{
 </div>
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-<script>
 
-const socket = io("https://quiz-backend-liq5.onrender.com/");
+<script>
+const socket = io("https://TU-BACKEND.onrender.com");
 let bloqueado = false;
 
 function join(){
@@ -106,9 +129,13 @@ socket.on("question",(data)=>{
   ops.innerHTML = data.opciones.map((o,i)=>
     `<button class="btn ${colors[i]}" onclick="ans(${i})">${o}</button>`
   ).join("");
+
+  ops.classList.add("fade");
 });
 
-socket.on("timer",(t)=> timer.innerText = t);
+socket.on("timer",(t)=>{
+  timer.innerText = t;
+});
 
 socket.on("end", ()=>{
   bloqueado = true;
@@ -125,7 +152,7 @@ function ans(i){
     correcta: 0
   });
 }
-
 </script>
+
 </body>
 </html>
