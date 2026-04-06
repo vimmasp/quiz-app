@@ -1,14 +1,75 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Jugador</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz PRO</title>
+
 <style>
-body{background:#111;color:white;text-align:center;}
-button{width:45%;height:120px;margin:10px;font-size:20px;}
+body{
+  margin:0;
+  font-family:Arial;
+  background:#121212;
+  color:white;
+  text-align:center;
+}
+
+.container{
+  padding:20px;
+}
+
+input{
+  padding:10px;
+  margin:5px;
+  width:80%;
+  border-radius:10px;
+  border:none;
+}
+
+button{
+  border:none;
+  border-radius:15px;
+  font-size:18px;
+  color:white;
+  transition:0.2s;
+}
+
+button:active{
+  transform:scale(0.95);
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:20px;
+}
+
+.btn{
+  height:120px;
+}
+
+.red{background:#e74c3c;}
+.blue{background:#3498db;}
+.green{background:#2ecc71;}
+.yellow{background:#f1c40f;}
+
+#timer{
+  font-size:50px;
+  margin:20px;
+  animation:pulse 1s infinite;
+}
+
+@keyframes pulse{
+  0%{transform:scale(1);}
+  50%{transform:scale(1.1);}
+  100%{transform:scale(1);}
+}
 </style>
 </head>
 
 <body>
+
+<div class="container">
 
 <h2>Unirse</h2>
 <input id="nombre" placeholder="Nombre">
@@ -16,13 +77,17 @@ button{width:45%;height:120px;margin:10px;font-size:20px;}
 <button onclick="join()">Entrar</button>
 
 <h2 id="q"></h2>
-<h1 id="timer"></h1>
-<div id="ops"></div>
+<div id="timer"></div>
+
+<div class="grid" id="ops"></div>
+
+</div>
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script>
 
-const socket = io("https://quiz-backend-liq5.onrender.com");
+const socket = io("https://quiz-backend-liq5.onrender.com/");
+let bloqueado = false;
 
 function join(){
   socket.emit("joinGame", {
@@ -32,18 +97,28 @@ function join(){
 }
 
 socket.on("question",(data)=>{
+  bloqueado = false;
+
   q.innerText = data.pregunta;
 
+  const colors = ["red","blue","green","yellow"];
+
   ops.innerHTML = data.opciones.map((o,i)=>
-    `<button onclick="ans(${i})">${o}</button>`
+    `<button class="btn ${colors[i]}" onclick="ans(${i})">${o}</button>`
   ).join("");
 });
 
-socket.on("timer",(t)=>{
-  timer.innerText = t;
+socket.on("timer",(t)=> timer.innerText = t);
+
+socket.on("end", ()=>{
+  bloqueado = true;
 });
 
 function ans(i){
+  if(bloqueado) return;
+
+  bloqueado = true;
+
   socket.emit("answer", {
     pin: pin.value,
     respuesta: i,
