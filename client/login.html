@@ -1,0 +1,24 @@
+<input id="user" placeholder="Usuario">
+<input id="pass" placeholder="Password" type="password">
+<button onclick="login()">Entrar</button>
+
+<script>
+function login(){
+  fetch("https://quiz-backend-liq5.onrender.com//login",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      user:user.value,
+      pass:pass.value
+    })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.ok){
+      window.location="host.html";
+    }else{
+      alert("Error login");
+    }
+  });
+}
+</script>
