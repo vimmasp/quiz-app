@@ -1,29 +1,26 @@
 <!DOCTYPE html>
-<style>
-body{font-family:Arial;background:#111;color:white;text-align:center;}
-button{padding:15px;margin:10px;font-size:18px;}
-</style>
 <html>
-<body>
+<body style="background:#111;color:white;text-align:center">
 
+<h1>HOST</h1>
 <button onclick="crear()">Crear partida</button>
 <h2 id="pin"></h2>
 
-<button onclick="pregunta()">Enviar pregunta</button>
-<button onclick="ranking()">Ver ranking</button>
+<button onclick="pregunta()">Iniciar pregunta</button>
+
+<ul id="players"></ul>
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script>
-
-const socket = io("https://quiz-backend-liq5.onrender.com");
-let currentPin = "";
+const socket = io("https://TU-BACKEND.onrender.com");
+let currentPin="";
 
 function crear(){
   fetch("https://TU-BACKEND.onrender.com/create")
   .then(r=>r.json())
   .then(d=>{
-    currentPin = d.pin;
-    pin.innerText = "PIN: " + d.pin;
+    currentPin=d.pin;
+    pin.innerText="PIN: "+d.pin;
   });
 }
 
@@ -31,18 +28,13 @@ function pregunta(){
   fetch("https://TU-BACKEND.onrender.com/question")
   .then(r=>r.json())
   .then(q=>{
-    socket.emit("startQuestion", {
-      pin: currentPin,
-      pregunta: q,
-      tiempo: 20
-    });
+    socket.emit("startQuestion",{pin:currentPin,pregunta:q,tiempo:15});
   });
 }
 
-function ranking(){
-  socket.emit("ranking", currentPin);
-}
-
+socket.on("players",(p)=>{
+  players.innerHTML=p.map(x=>`<li>${x.nombre}</li>`).join("");
+});
 </script>
 
 </body>
