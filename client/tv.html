@@ -8,7 +8,7 @@
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script>
 
-const socket = io("https://TU-BACKEND.onrender.com");
+const socket = io("https://quiz-backend-liq5.onrender.com");
 
 socket.on("ranking",(data)=>{
   r.innerHTML = data.map(p=>`<li>${p.nombre} - ${p.puntos}</li>`).join("");
