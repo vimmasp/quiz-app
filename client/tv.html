@@ -1,19 +1,17 @@
 <!DOCTYPE html>
 <html>
-<body>
+<body style="background:black;color:white;text-align:center;font-size:40px">
 
-<h1>🏆 Ranking</h1>
+<h1>🏆 RANKING</h1>
 <ul id="r"></ul>
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script>
+const socket = io("https://TU-BACKEND.onrender.com");
 
-const socket = io("https://quiz-backend-liq5.onrender.com");
-
-socket.on("ranking",(data)=>{
-  r.innerHTML = data.map(p=>`<li>${p.nombre} - ${p.puntos}</li>`).join("");
+socket.on("showRanking",(data)=>{
+  r.innerHTML = data.map((p,i)=>`<li>${i+1}. ${p.nombre} - ${p.puntos}</li>`).join("");
 });
-
 </script>
 
 </body>
