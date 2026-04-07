@@ -25,7 +25,8 @@ app.get("/create", (req,res)=>{
     jugadores: [],
     preguntas: [],
     index: 0,
-    conteo: [0,0,0,0] // 📊 stats en tiempo real
+    preguntaActual: null, // 🔥 CLAVE
+    conteo: [0,0,0,0]
   };
 
   res.json({pin});
@@ -34,7 +35,7 @@ app.get("/create", (req,res)=>{
 // 🔌 SOCKETS
 io.on("connection", socket => {
 
-  // 👥 UNIR JUGADOR
+  // 👥 UNIR
   socket.on("join", ({pin,nombre})=>{
     if(!salas[pin]) return;
 
@@ -54,21 +55,14 @@ io.on("connection", socket => {
   socket.on("addQuestion", ({pin, pregunta})=>{
     if(!salas[pin]) return;
 
-    if(salas[pin].preguntas.length >= 5){
-      return;
-    }
-
     salas[pin].preguntas.push(pregunta);
-
-    console.log("Pregunta agregada:", pregunta.pregunta);
   });
 
-  // 🚀 INICIAR JUEGO
+  // 🚀 INICIAR
   socket.on("startGame", ({pin})=>{
     if(!salas[pin]) return;
 
     salas[pin].index = 0;
-
     enviarPregunta(pin);
   });
 
@@ -78,26 +72,21 @@ io.on("connection", socket => {
     const sala = salas[pin];
     if(!sala) return;
 
-    // 🏁 FIN DEL JUEGO
     if(sala.index >= sala.preguntas.length){
 
       const ranking = sala.jugadores.sort((a,b)=>b.puntos-a.puntos);
 
-      console.log("Enviando ranking final");
-
       io.to(pin).emit("ranking", ranking);
-
       return;
     }
 
     const pregunta = sala.preguntas[sala.index];
 
-    console.log("Enviando pregunta:", pregunta.pregunta);
+    // 🔥 GUARDAR PREGUNTA ACTUAL
+    sala.preguntaActual = pregunta;
 
-    // reset respuestas
+    // reset
     sala.jugadores.forEach(j => j.respondio = false);
-
-    // reset conteo
     sala.conteo = [0,0,0,0];
 
     io.to(pin).emit("question", pregunta);
@@ -106,7 +95,6 @@ io.on("connection", socket => {
 
     const timer = setInterval(()=>{
       t--;
-
       io.to(pin).emit("timer", t);
 
       if(t <= 0){
@@ -114,9 +102,7 @@ io.on("connection", socket => {
 
         sala.index++;
 
-        setTimeout(()=>{
-          enviarPregunta(pin);
-        },2000);
+        setTimeout(()=> enviarPregunta(pin), 2000);
       }
 
     },1000);
@@ -129,31 +115,25 @@ io.on("connection", socket => {
 
     const jugador = sala.jugadores.find(j=>j.id === socket.id);
 
-    // 🔥 IMPORTANTE: usar index actual
-    const preguntaActual = sala.preguntas[sala.index - 1];
+    const pregunta = sala.preguntaActual; // 🔥 USAR ESTA
 
-    if(jugador && !jugador.respondio && preguntaActual){
+    if(jugador && !jugador.respondio && pregunta){
 
       jugador.respondio = true;
 
-      console.log("Jugador:", jugador.nombre);
-      console.log("Respuesta:", respuesta);
-      console.log("Correcta:", preguntaActual.correcta);
-
-      // 📊 sumar conteo
+      // 📊 stats
       sala.conteo[respuesta]++;
 
-      // enviar stats en vivo
       io.to(pin).emit("stats", {
         conteo: sala.conteo
       });
 
-      // 🏆 validar puntos
-      if(respuesta === preguntaActual.correcta){
+      // 🏆 puntos
+      if(respuesta === pregunta.correcta){
         jugador.puntos += 100;
-        console.log("✅ Puntos sumados");
+        console.log("✅ SUMA:", jugador.nombre);
       }else{
-        console.log("❌ Respuesta incorrecta");
+        console.log("❌ FALLÓ:", jugador.nombre);
       }
 
     }
@@ -161,7 +141,6 @@ io.on("connection", socket => {
 
 });
 
-// 🚀 SERVIDOR
 server.listen(process.env.PORT || 3000, ()=> 
   console.log("Servidor listo")
 );
