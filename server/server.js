@@ -42,18 +42,19 @@ io.on("connection", socket => {
     salas[pin].jugadores.push({
       id: socket.id,
       nombre,
-      puntos: 0
+      puntos: 0,
+      respondio: false
     });
 
     io.to(pin).emit("players", salas[pin].jugadores);
   });
 
-  // 📝 AGREGAR PREGUNTAS
+  // 📝 AGREGAR PREGUNTA
   socket.on("addQuestion", ({pin, pregunta})=>{
     if(!salas[pin]) return;
 
     if(salas[pin].preguntas.length >= 5){
-      return; // límite de 5
+      return; // límite
     }
 
     salas[pin].preguntas.push(pregunta);
@@ -70,12 +71,13 @@ io.on("connection", socket => {
     enviarPregunta(pin);
   });
 
-  // 🔁 FUNCIÓN PARA ENVIAR PREGUNTAS
+  // 🔁 ENVIAR PREGUNTA
   function enviarPregunta(pin){
+
     const sala = salas[pin];
     if(!sala) return;
 
-    // 🏁 Si ya no hay más preguntas → ranking final
+    // 🏁 FIN DEL JUEGO
     if(sala.index >= sala.preguntas.length){
 
       const ranking = sala.jugadores.sort((a,b)=>b.puntos-a.puntos);
@@ -89,13 +91,15 @@ io.on("connection", socket => {
 
     console.log("Enviando pregunta:", pregunta.pregunta);
 
+    // reset respuestas
+    sala.jugadores.forEach(j => j.respondio = false);
+
     io.to(pin).emit("question", pregunta);
 
     let t = 10;
 
     const timer = setInterval(()=>{
       t--;
-
       io.to(pin).emit("timer", t);
 
       if(t <= 0){
@@ -103,7 +107,6 @@ io.on("connection", socket => {
 
         sala.index++;
 
-        // ⏳ espera 2 segundos antes de siguiente
         setTimeout(()=>{
           enviarPregunta(pin);
         },2000);
@@ -112,20 +115,31 @@ io.on("connection", socket => {
     },1000);
   }
 
-  // ✅ RESPUESTAS
+  // ✅ RESPUESTA
   socket.on("answer", ({pin, respuesta})=>{
     const sala = salas[pin];
     if(!sala) return;
 
     const jugador = sala.jugadores.find(j=>j.id === socket.id);
 
+    // 👇 FIX IMPORTANTE
     const preguntaActual = sala.preguntas[sala.index];
 
-    console.log("Respuesta:", respuesta, "Correcta:", preguntaActual?.correcta);
+    if(jugador && !jugador.respondio && preguntaActual){
 
-    if(jugador && preguntaActual && respuesta === preguntaActual.correcta){
-      jugador.puntos += 100;
-      console.log("Puntos sumados a:", jugador.nombre);
+      jugador.respondio = true;
+
+      console.log("Jugador:", jugador.nombre);
+      console.log("Respuesta:", respuesta);
+      console.log("Correcta:", preguntaActual.correcta);
+
+      if(respuesta === preguntaActual.correcta){
+        jugador.puntos += 100;
+        console.log("✅ Puntos sumados");
+      }else{
+        console.log("❌ Respuesta incorrecta");
+      }
+
     }
   });
 
