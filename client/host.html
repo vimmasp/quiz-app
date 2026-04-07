@@ -1,22 +1,79 @@
 <!DOCTYPE html>
-<html>
-<body style="background:#111;color:white;text-align:center">
+<html lang="es">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Host Quiz</title>
 
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#111;
+  color:white;
+  text-align:center;
+}
+
+.container{
+  padding:20px;
+}
+
+input{
+  padding:10px;
+  margin:5px;
+  width:80%;
+  border-radius:10px;
+  border:none;
+}
+
+button{
+  padding:12px;
+  margin:10px;
+  border:none;
+  border-radius:10px;
+  background:#3498db;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#2980b9;
+}
+
+#pin{
+  font-size:40px;
+  color:#2ecc71;
+  margin:20px;
+}
+
+ul{
+  list-style:none;
+  padding:0;
+}
+</style>
+</head>
+
+<body>
+
+<!-- 🔐 PROTECCIÓN LOGIN -->
 <script>
 if(localStorage.getItem("auth") !== "ok"){
-  window.location="login.html";
+  window.location = "login.html";
 }
 </script>
 
-<h1>HOST</h1>
+<div class="container">
 
-<button onclick="logout()">Salir</button>
+<h1>🎮 HOST PANEL</h1>
+
+<button onclick="logout()">Cerrar sesión</button>
 <button onclick="crear()">Crear partida</button>
 
 <h2 id="pin"></h2>
 
-<h3>Pregunta:</h3>
-<input id="pregunta" placeholder="Pregunta"><br>
+<h3>📝 Crear pregunta</h3>
+
+<input id="pregunta" placeholder="Escribe la pregunta"><br>
 
 <input id="op1" placeholder="Opción 1"><br>
 <input id="op2" placeholder="Opción 2"><br>
@@ -27,45 +84,92 @@ if(localStorage.getItem("auth") !== "ok"){
 
 <button onclick="enviar()">Enviar pregunta</button>
 
+<h3>👥 Jugadores</h3>
 <ul id="players"></ul>
 
+</div>
+
+<!-- SOCKET -->
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 
 <script>
 const socket = io("https://quiz-backend-liq5.onrender.com");
 
-let currentPin="";
+let currentPin = "";
 
+// 🔐 Logout
 function logout(){
   localStorage.removeItem("auth");
-  window.location="login.html";
+  window.location = "login.html";
 }
 
+// 🎮 Crear partida
 function crear(){
+
+  console.log("Creando partida...");
+
   fetch("https://quiz-backend-liq5.onrender.com/create")
-  .then(r=>r.json())
-  .then(d=>{
+  .then(r => r.json())
+  .then(d => {
+
+    console.log("Respuesta servidor:", d);
+
     currentPin = d.pin;
-    pin.innerText = "PIN: " + d.pin;
+
+    document.getElementById("pin").innerText = "PIN: " + d.pin;
+
+    // 👇 MUY IMPORTANTE: unir host a la sala
+    socket.emit("join", { pin: currentPin, nombre: "HOST" });
+
+  })
+  .catch(err => {
+    console.error("Error:", err);
+    alert("Error al crear partida");
   });
 }
 
+// ❓ Enviar pregunta
 function enviar(){
+
+  if(currentPin === ""){
+    alert("Primero crea una partida");
+    return;
+  }
+
+  if(pregunta.value === "" || op1.value === "" || op2.value === "" || op3.value === "" || op4.value === ""){
+    alert("Completa todos los campos");
+    return;
+  }
+
+  if(correcta.value === ""){
+    alert("Ingresa la respuesta correcta (0-3)");
+    return;
+  }
+
   const q = {
     pregunta: pregunta.value,
     opciones: [op1.value, op2.value, op3.value, op4.value],
     correcta: parseInt(correcta.value)
   };
 
+  console.log("Enviando pregunta:", q);
+
   socket.emit("startQuestion", {
     pin: currentPin,
     pregunta: q,
     tiempo: 15
   });
+
 }
 
-socket.on("players",(p)=>{
-  players.innerHTML = p.map(x=>`<li>${x.nombre}</li>`).join("");
+// 👥 Lista de jugadores
+socket.on("players", (p) => {
+
+  console.log("Jugadores:", p);
+
+  document.getElementById("players").innerHTML =
+    p.map(x => `<li>${x.nombre} - ${x.puntos} pts</li>`).join("");
+
 });
 </script>
 
