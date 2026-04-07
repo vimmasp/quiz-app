@@ -12,23 +12,28 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 let salas = {};
 
+// 🔹 Generar PIN
 function generarPIN(){
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Crear partida
+// 🔹 Crear partida
 app.get("/create", (req,res)=>{
   const pin = generarPIN();
+
   salas[pin] = {
     jugadores: [],
-    preguntaActual: null
+    preguntas: [],
+    index: 0
   };
+
   res.json({pin});
 });
 
-// SOCKETS
+// 🔌 SOCKETS
 io.on("connection", socket => {
 
+  // 👥 UNIR JUGADOR
   socket.on("join", ({pin,nombre})=>{
     if(!salas[pin]) return;
 
@@ -43,42 +48,90 @@ io.on("connection", socket => {
     io.to(pin).emit("players", salas[pin].jugadores);
   });
 
-  socket.on("startQuestion", ({pin, pregunta, tiempo})=>{
+  // 📝 AGREGAR PREGUNTAS
+  socket.on("addQuestion", ({pin, pregunta})=>{
+    if(!salas[pin]) return;
+
+    if(salas[pin].preguntas.length >= 5){
+      return; // límite de 5
+    }
+
+    salas[pin].preguntas.push(pregunta);
+
+    console.log("Pregunta agregada:", pregunta.pregunta);
+  });
+
+  // 🚀 INICIAR JUEGO
+  socket.on("startGame", ({pin})=>{
+    if(!salas[pin]) return;
+
+    salas[pin].index = 0;
+
+    enviarPregunta(pin);
+  });
+
+  // 🔁 FUNCIÓN PARA ENVIAR PREGUNTAS
+  function enviarPregunta(pin){
     const sala = salas[pin];
     if(!sala) return;
 
-    sala.preguntaActual = pregunta;
+    // 🏁 Si ya no hay más preguntas → ranking final
+    if(sala.index >= sala.preguntas.length){
+
+      const ranking = sala.jugadores.sort((a,b)=>b.puntos-a.puntos);
+
+      io.to(pin).emit("ranking", ranking);
+
+      return;
+    }
+
+    const pregunta = sala.preguntas[sala.index];
+
+    console.log("Enviando pregunta:", pregunta.pregunta);
 
     io.to(pin).emit("question", pregunta);
 
-    let t = tiempo;
+    let t = 10;
 
     const timer = setInterval(()=>{
       t--;
+
       io.to(pin).emit("timer", t);
 
       if(t <= 0){
         clearInterval(timer);
 
-        const ranking = sala.jugadores.sort((a,b)=>b.puntos-a.puntos);
+        sala.index++;
 
-        io.to(pin).emit("ranking", ranking);
+        // ⏳ espera 2 segundos antes de siguiente
+        setTimeout(()=>{
+          enviarPregunta(pin);
+        },2000);
       }
 
     },1000);
-  });
+  }
 
+  // ✅ RESPUESTAS
   socket.on("answer", ({pin, respuesta})=>{
     const sala = salas[pin];
     if(!sala) return;
 
     const jugador = sala.jugadores.find(j=>j.id === socket.id);
 
-    if(jugador && respuesta === sala.preguntaActual.correcta){
+    const preguntaActual = sala.preguntas[sala.index];
+
+    console.log("Respuesta:", respuesta, "Correcta:", preguntaActual?.correcta);
+
+    if(jugador && preguntaActual && respuesta === preguntaActual.correcta){
       jugador.puntos += 100;
+      console.log("Puntos sumados a:", jugador.nombre);
     }
   });
 
 });
 
-server.listen(process.env.PORT || 3000, ()=> console.log("Servidor listo"));
+// 🚀 SERVIDOR
+server.listen(process.env.PORT || 3000, ()=> 
+  console.log("Servidor listo")
+);
