@@ -1,19 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-<meta name="viewport" content="width=device-width">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
-body{background:#121212;color:white;text-align:center;}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.btn{height:100px;border:none;border-radius:15px;color:white;font-size:18px;}
-.red{background:#e74c3c;} .blue{background:#3498db;}
-.green{background:#2ecc71;} .yellow{background:#f1c40f;}
+body{
+  margin:0;
+  font-family:Arial;
+  background:#121212;
+  color:white;
+  text-align:center;
+}
+
+.container{
+  padding:20px;
+}
+
+input{
+  padding:12px;
+  margin:5px;
+  width:80%;
+  border-radius:10px;
+  border:none;
+}
+
+button{
+  padding:12px;
+  margin:10px;
+  border:none;
+  border-radius:10px;
+  font-size:16px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:20px;
+}
+
+.btn{
+  height:100px;
+  font-size:18px;
+  font-weight:bold;
+  color:white;
+}
+
+.red{background:#e74c3c;}
+.blue{background:#3498db;}
+.green{background:#2ecc71;}
+.yellow{background:#f1c40f;}
+
+#timer{
+  font-size:50px;
+  margin:10px;
+}
+
+#status{
+  margin-top:10px;
+  color:#f1c40f;
+}
 </style>
 </head>
 
 <body>
 
-<h2>Jugador</h2>
+<div class="container">
+
+<h2>🎮 Jugador</h2>
 
 <input id="nombre" placeholder="Nombre"><br>
 <input id="pin" placeholder="PIN"><br>
@@ -21,39 +75,93 @@ body{background:#121212;color:white;text-align:center;}
 <button onclick="join()">Entrar</button>
 
 <h3 id="q"></h3>
-<h1 id="timer"></h1>
+<div id="timer"></div>
+<div id="status"></div>
 
 <div class="grid" id="ops"></div>
+
+<h3 id="ranking"></h3>
+
+</div>
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 
 <script>
 const socket = io("https://quiz-backend-liq5.onrender.com");
-let bloqueado=false;
 
+let bloqueado = false;
+let joined = false;
+
+// 👥 Entrar
 function join(){
-  socket.emit("join",{nombre:nombre.value,pin:pin.value});
+
+  const nombreVal = document.getElementById("nombre").value.trim();
+  const pinVal = document.getElementById("pin").value.trim();
+
+  if(nombreVal === "" || pinVal === ""){
+    alert("Ingresa nombre y PIN");
+    return;
+  }
+
+  socket.emit("join", { nombre: nombreVal, pin: pinVal });
+
+  joined = true;
+
+  document.getElementById("status").innerText = "Esperando preguntas...";
 }
 
+// ❓ Recibir pregunta
 socket.on("question",(q)=>{
-  bloqueado=false;
 
-  document.getElementById("q").innerText=q.pregunta;
+  bloqueado = false;
 
-  const colors=["red","blue","green","yellow"];
+  document.getElementById("q").innerText = q.pregunta;
+  document.getElementById("status").innerText = "Responde rápido 🚀";
 
-  ops.innerHTML = q.opciones.map((o,i)=>
+  const colors = ["red","blue","green","yellow"];
+
+  document.getElementById("ops").innerHTML = q.opciones.map((o,i)=>
     `<button class="btn ${colors[i]}" onclick="ans(${i})">${o}</button>`
   ).join("");
 });
 
-socket.on("timer",(t)=> timer.innerText=t);
+// ⏱️ Timer
+socket.on("timer",(t)=>{
+  document.getElementById("timer").innerText = t;
+});
 
+// 🏆 Ranking final
+socket.on("ranking",(data)=>{
+
+  document.getElementById("q").innerText = "🏆 RESULTADOS";
+  document.getElementById("ops").innerHTML = "";
+  document.getElementById("timer").innerText = "";
+  document.getElementById("status").innerText = "";
+
+  document.getElementById("ranking").innerHTML =
+    data.map((p,i)=>`<div>${i+1}. ${p.nombre} - ${p.puntos} pts</div>`).join("");
+});
+
+// ✅ Responder
 function ans(i){
-  if(bloqueado) return;
-  bloqueado=true;
 
-  socket.emit("answer",{pin:pin.value,respuesta:i});
+  if(!joined){
+    alert("Primero entra al juego");
+    return;
+  }
+
+  if(bloqueado) return;
+
+  bloqueado = true;
+
+  document.getElementById("status").innerText = "Respuesta enviada ✅";
+
+  const pinVal = document.getElementById("pin").value;
+
+  socket.emit("answer", {
+    pin: pinVal,
+    respuesta: i
+  });
 }
 </script>
 
