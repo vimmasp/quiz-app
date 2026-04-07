@@ -1,18 +1,103 @@
 <!DOCTYPE html>
-<html>
-<body style="background:black;color:white;text-align:center;font-size:40px">
+<html lang="es">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<h1>🏆 RANKING</h1>
-<ul id="r"></ul>
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:black;
+  color:white;
+  text-align:center;
+}
+
+.container{
+  padding:20px;
+}
+
+h1{
+  font-size:50px;
+}
+
+#pregunta{
+  font-size:40px;
+  margin:20px;
+}
+
+#timer{
+  font-size:80px;
+  color:#f1c40f;
+}
+
+#ranking{
+  margin-top:20px;
+}
+
+.player{
+  font-size:30px;
+  margin:10px;
+  padding:10px;
+  border-radius:10px;
+  background:#222;
+}
+
+.top1{background:#f1c40f;color:black;}
+.top2{background:#bdc3c7;color:black;}
+.top3{background:#cd7f32;color:black;}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🎮 QUIZ EN VIVO</h1>
+
+<div id="pregunta"></div>
+<div id="timer"></div>
+
+<div id="ranking"></div>
+
+</div>
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 
 <script>
 const socket = io("https://quiz-backend-liq5.onrender.com");
 
-socket.on("ranking",(data)=>{
-  r.innerHTML = data.map((p,i)=>`<li>${i+1}. ${p.nombre} - ${p.puntos}</li>`).join("");
+// ❓ Mostrar pregunta
+socket.on("question",(q)=>{
+  document.getElementById("pregunta").innerText = q.pregunta;
+  document.getElementById("ranking").innerHTML = "";
 });
+
+// ⏱️ Timer
+socket.on("timer",(t)=>{
+  document.getElementById("timer").innerText = t;
+});
+
+// 🏆 Ranking final
+socket.on("ranking",(data)=>{
+
+  document.getElementById("pregunta").innerText = "🏆 RESULTADOS";
+  document.getElementById("timer").innerText = "";
+
+  document.getElementById("ranking").innerHTML =
+    data.map((p,i)=>{
+
+      let clase = "";
+      if(i === 0) clase = "top1";
+      else if(i === 1) clase = "top2";
+      else if(i === 2) clase = "top3";
+
+      return `<div class="player ${clase}">
+        ${i+1}. ${p.nombre} - ${p.puntos} pts
+      </div>`;
+
+    }).join("");
+});
+
 </script>
 
 </body>
