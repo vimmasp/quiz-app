@@ -1,46 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width">
 <style>
-body{margin:0;font-family:sans-serif;background:#121212;color:white;text-align:center;}
-.card{padding:20px;}
-input{padding:10px;margin:5px;width:80%;border-radius:10px;border:none;}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px;}
-.btn{height:100px;font-size:18px;border:none;border-radius:15px;color:white;}
+body{background:#121212;color:white;text-align:center;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn{height:100px;border:none;border-radius:15px;color:white;font-size:18px;}
 .red{background:#e74c3c;} .blue{background:#3498db;}
 .green{background:#2ecc71;} .yellow{background:#f1c40f;}
-#timer{font-size:50px;animation:pulse 1s infinite;}
-@keyframes pulse{50%{transform:scale(1.2);}}
 </style>
 </head>
 
 <body>
 
-<div class="card">
-<h2>🎮 Quiz</h2>
+<h2>Jugador</h2>
 
-<input id="nombre" placeholder="Nombre">
-<input id="pin" placeholder="PIN">
+<input id="nombre" placeholder="Nombre"><br>
+<input id="pin" placeholder="PIN"><br>
+
 <button onclick="join()">Entrar</button>
 
 <h3 id="q"></h3>
-<div id="timer"></div>
+<h1 id="timer"></h1>
 
 <div class="grid" id="ops"></div>
-</div>
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
 <script>
-const socket = io("https://quiz-backend-liq5.onrender.com/");
+const socket = io("https://TU-BACKEND.onrender.com");
 let bloqueado=false;
 
 function join(){
-  socket.emit("join", {nombre:nombre.value, pin:pin.value});
+  socket.emit("join",{nombre:nombre.value,pin:pin.value});
 }
 
 socket.on("question",(q)=>{
   bloqueado=false;
+
   document.getElementById("q").innerText=q.pregunta;
 
   const colors=["red","blue","green","yellow"];
