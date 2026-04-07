@@ -24,7 +24,8 @@ app.get("/create", (req,res)=>{
   salas[pin] = {
     jugadores: [],
     preguntas: [],
-    index: 0
+    index: 0,
+    conteo: [0,0,0,0] // 📊 stats en tiempo real
   };
 
   res.json({pin});
@@ -54,7 +55,7 @@ io.on("connection", socket => {
     if(!salas[pin]) return;
 
     if(salas[pin].preguntas.length >= 5){
-      return; // límite
+      return;
     }
 
     salas[pin].preguntas.push(pregunta);
@@ -82,6 +83,8 @@ io.on("connection", socket => {
 
       const ranking = sala.jugadores.sort((a,b)=>b.puntos-a.puntos);
 
+      console.log("Enviando ranking final");
+
       io.to(pin).emit("ranking", ranking);
 
       return;
@@ -94,12 +97,16 @@ io.on("connection", socket => {
     // reset respuestas
     sala.jugadores.forEach(j => j.respondio = false);
 
+    // reset conteo
+    sala.conteo = [0,0,0,0];
+
     io.to(pin).emit("question", pregunta);
 
     let t = 10;
 
     const timer = setInterval(()=>{
       t--;
+
       io.to(pin).emit("timer", t);
 
       if(t <= 0){
@@ -122,7 +129,7 @@ io.on("connection", socket => {
 
     const jugador = sala.jugadores.find(j=>j.id === socket.id);
 
-    // 👇 FIX IMPORTANTE
+    // 🔥 IMPORTANTE: usar index actual
     const preguntaActual = sala.preguntas[sala.index];
 
     if(jugador && !jugador.respondio && preguntaActual){
@@ -133,6 +140,15 @@ io.on("connection", socket => {
       console.log("Respuesta:", respuesta);
       console.log("Correcta:", preguntaActual.correcta);
 
+      // 📊 sumar conteo
+      sala.conteo[respuesta]++;
+
+      // enviar stats en vivo
+      io.to(pin).emit("stats", {
+        conteo: sala.conteo
+      });
+
+      // 🏆 validar puntos
       if(respuesta === preguntaActual.correcta){
         jugador.puntos += 100;
         console.log("✅ Puntos sumados");
