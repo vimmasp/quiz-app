@@ -130,7 +130,7 @@ io.on("connection", socket => {
     const jugador = sala.jugadores.find(j=>j.id === socket.id);
 
     // 🔥 IMPORTANTE: usar index actual
-    const preguntaActual = sala.preguntas[sala.index];
+    const preguntaActual = sala.preguntas[sala.index - 1];
 
     if(jugador && !jugador.respondio && preguntaActual){
 
