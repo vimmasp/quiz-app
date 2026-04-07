@@ -50,6 +50,11 @@ ul{
   list-style:none;
   padding:0;
 }
+
+#status{
+  margin-top:10px;
+  color:#f1c40f;
+}
 </style>
 </head>
 
@@ -82,7 +87,10 @@ if(localStorage.getItem("auth") !== "ok"){
 
 <input id="correcta" placeholder="Respuesta correcta (0-3)"><br>
 
-<button onclick="enviar()">Enviar pregunta</button>
+<button onclick="agregar()">➕ Agregar pregunta</button>
+<button onclick="iniciar()">🚀 Iniciar juego</button>
+
+<div id="status"></div>
 
 <h3>👥 Jugadores</h3>
 <ul id="players"></ul>
@@ -106,30 +114,27 @@ function logout(){
 // 🎮 Crear partida
 function crear(){
 
-  console.log("Creando partida...");
-
   fetch("https://quiz-backend-liq5.onrender.com/create")
   .then(r => r.json())
   .then(d => {
 
-    console.log("Respuesta servidor:", d);
-
     currentPin = d.pin;
 
     document.getElementById("pin").innerText = "PIN: " + d.pin;
+    document.getElementById("status").innerText = "Partida creada ✅";
 
-    // 👇 MUY IMPORTANTE: unir host a la sala
+    // unir host a la sala
     socket.emit("join", { pin: currentPin, nombre: "HOST" });
 
   })
   .catch(err => {
-    console.error("Error:", err);
+    console.error(err);
     alert("Error al crear partida");
   });
 }
 
-// ❓ Enviar pregunta
-function enviar(){
+// ➕ Agregar pregunta
+function agregar(){
 
   if(currentPin === ""){
     alert("Primero crea una partida");
@@ -152,20 +157,39 @@ function enviar(){
     correcta: parseInt(correcta.value)
   };
 
-  console.log("Enviando pregunta:", q);
-
-  socket.emit("startQuestion", {
+  socket.emit("addQuestion", {
     pin: currentPin,
-    pregunta: q,
-    tiempo: 15
+    pregunta: q
   });
 
+  document.getElementById("status").innerText = "Pregunta agregada ✅";
+
+  // limpiar campos
+  pregunta.value = "";
+  op1.value = "";
+  op2.value = "";
+  op3.value = "";
+  op4.value = "";
+  correcta.value = "";
+}
+
+// 🚀 Iniciar juego
+function iniciar(){
+
+  if(currentPin === ""){
+    alert("Primero crea una partida");
+    return;
+  }
+
+  document.getElementById("status").innerText = "Juego iniciado 🚀";
+
+  socket.emit("startGame", {
+    pin: currentPin
+  });
 }
 
 // 👥 Lista de jugadores
 socket.on("players", (p) => {
-
-  console.log("Jugadores:", p);
 
   document.getElementById("players").innerHTML =
     p.map(x => `<li>${x.nombre} - ${x.puntos} pts</li>`).join("");
