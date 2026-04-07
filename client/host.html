@@ -1,45 +1,71 @@
-<script>
-if(localStorage.getItem("auth") !== "ok"){
-  window.location = "login.html";
-}
-</script>
-
 <!DOCTYPE html>
 <html>
 <body style="background:#111;color:white;text-align:center">
 
+<script>
+if(localStorage.getItem("auth") !== "ok"){
+  window.location="login.html";
+}
+</script>
+
 <h1>HOST</h1>
+
+<button onclick="logout()">Salir</button>
 <button onclick="crear()">Crear partida</button>
+
 <h2 id="pin"></h2>
 
-<button onclick="pregunta()">Iniciar pregunta</button>
+<h3>Pregunta:</h3>
+<input id="pregunta" placeholder="Pregunta"><br>
+
+<input id="op1" placeholder="Opción 1"><br>
+<input id="op2" placeholder="Opción 2"><br>
+<input id="op3" placeholder="Opción 3"><br>
+<input id="op4" placeholder="Opción 4"><br>
+
+<input id="correcta" placeholder="Respuesta correcta (0-3)"><br>
+
+<button onclick="enviar()">Enviar pregunta</button>
 
 <ul id="players"></ul>
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
 <script>
-const socket = io("https://quiz-backend-liq5.onrender.com/");
+const socket = io("https://TU-BACKEND.onrender.com");
+
 let currentPin="";
 
+function logout(){
+  localStorage.removeItem("auth");
+  window.location="login.html";
+}
+
 function crear(){
-  fetch("https://TU-BACKEND.onrender.com/create")
+  fetch(" https://quiz-backend-liq5.onrender.com/create")
   .then(r=>r.json())
   .then(d=>{
-    currentPin=d.pin;
-    pin.innerText="PIN: "+d.pin;
+    currentPin = d.pin;
+    pin.innerText = "PIN: " + d.pin;
   });
 }
 
-function pregunta(){
-  fetch("https://TU-BACKEND.onrender.com/question")
-  .then(r=>r.json())
-  .then(q=>{
-    socket.emit("startQuestion",{pin:currentPin,pregunta:q,tiempo:15});
+function enviar(){
+  const q = {
+    pregunta: pregunta.value,
+    opciones: [op1.value, op2.value, op3.value, op4.value],
+    correcta: parseInt(correcta.value)
+  };
+
+  socket.emit("startQuestion", {
+    pin: currentPin,
+    pregunta: q,
+    tiempo: 15
   });
 }
 
 socket.on("players",(p)=>{
-  players.innerHTML=p.map(x=>`<li>${x.nombre}</li>`).join("");
+  players.innerHTML = p.map(x=>`<li>${x.nombre}</li>`).join("");
 });
 </script>
 
