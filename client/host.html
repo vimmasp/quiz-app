@@ -124,7 +124,6 @@ function crear(){
     document.getElementById("status").innerText = "Partida creada ✅";
 
     // unir host a la sala
-    socket.emit("join", { pin: currentPin, nombre: "HOST" });
 
   })
   .catch(err => {
