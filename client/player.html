@@ -60,6 +60,11 @@ button{
   margin-top:10px;
   color:#f1c40f;
 }
+
+#ranking{
+  margin-top:20px;
+  font-size:20px;
+}
 </style>
 </head>
 
@@ -80,7 +85,7 @@ button{
 
 <div class="grid" id="ops"></div>
 
-<h3 id="ranking"></h3>
+<div id="ranking"></div>
 
 </div>
 
@@ -91,8 +96,9 @@ const socket = io("https://quiz-backend-liq5.onrender.com");
 
 let bloqueado = false;
 let joined = false;
+let nombreJugador = "";
 
-// 👥 Entrar
+// 👥 ENTRAR AL JUEGO
 function join(){
 
   const nombreVal = document.getElementById("nombre").value.trim();
@@ -103,18 +109,24 @@ function join(){
     return;
   }
 
+  nombreJugador = nombreVal;
+
   socket.emit("join", { nombre: nombreVal, pin: pinVal });
 
   joined = true;
 
   document.getElementById("status").innerText = "Esperando preguntas...";
+  document.getElementById("ranking").innerHTML = "";
+
+  console.log("Entrando a sala:", pinVal);
 }
 
-// ❓ Recibir pregunta
+// ❓ RECIBIR PREGUNTA
 socket.on("question",(q)=>{
 
   bloqueado = false;
 
+  document.getElementById("ranking").innerHTML = "";
   document.getElementById("q").innerText = q.pregunta;
   document.getElementById("status").innerText = "Responde rápido 🚀";
 
@@ -123,26 +135,41 @@ socket.on("question",(q)=>{
   document.getElementById("ops").innerHTML = q.opciones.map((o,i)=>
     `<button class="btn ${colors[i]}" onclick="ans(${i})">${o}</button>`
   ).join("");
+
 });
 
-// ⏱️ Timer
+// ⏱️ TIMER
 socket.on("timer",(t)=>{
   document.getElementById("timer").innerText = t;
 });
 
-// 🏆 Ranking final
+// 🏆 RANKING FINAL
 socket.on("ranking",(data)=>{
+
+  console.log("RANKING RECIBIDO:", data);
 
   document.getElementById("q").innerText = "🏆 RESULTADOS";
   document.getElementById("ops").innerHTML = "";
   document.getElementById("timer").innerText = "";
   document.getElementById("status").innerText = "";
 
+  // 🔥 Mostrar ranking general
   document.getElementById("ranking").innerHTML =
     data.map((p,i)=>`<div>${i+1}. ${p.nombre} - ${p.puntos} pts</div>`).join("");
+
+  // ⭐ Mostrar posición personal
+  const posicion = data.findIndex(p => p.nombre === nombreJugador);
+
+  if(posicion !== -1){
+    const lugar = posicion + 1;
+
+    document.getElementById("status").innerText =
+      `🎯 Terminaste en posición #${lugar}`;
+  }
+
 });
 
-// ✅ Responder
+// ✅ RESPONDER
 function ans(i){
 
   if(!joined){
@@ -156,12 +183,13 @@ function ans(i){
 
   document.getElementById("status").innerText = "Respuesta enviada ✅";
 
-  const pinVal = document.getElementById("pin").value;
+  const pinVal = document.getElementById("pin").value.trim();
 
   socket.emit("answer", {
     pin: pinVal,
     respuesta: i
   });
+
 }
 </script>
 
