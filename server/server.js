@@ -5,29 +5,12 @@ const cors = require("cors");
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 let salas = {};
-
-const preguntas = [
-  {
-    pregunta: "¿Capital de México?",
-    opciones: ["CDMX","Guadalajara","Monterrey","Puebla"],
-    correcta: 0
-  },
-  {
-    pregunta: "¿5 x 2?",
-    opciones: ["10","8","6","12"],
-    correcta: 0
-  },
-  {
-    pregunta: "¿Color del cielo?",
-    opciones: ["Rojo","Azul","Verde","Amarillo"],
-    correcta: 1
-  }
-];
 
 function generarPIN(){
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -36,23 +19,20 @@ function generarPIN(){
 // Crear partida
 app.get("/create", (req,res)=>{
   const pin = generarPIN();
-  salas[pin] = { jugadores: [], preguntaActual: null };
+  salas[pin] = {
+    jugadores: [],
+    preguntaActual: null
+  };
   res.json({pin});
-});
-
-// Obtener pregunta
-app.get("/question", (req,res)=>{
-  const q = preguntas[Math.floor(Math.random()*preguntas.length)];
-  res.json(q);
 });
 
 // SOCKETS
 io.on("connection", socket => {
 
   socket.on("join", ({pin,nombre})=>{
-    socket.join(pin);
-
     if(!salas[pin]) return;
+
+    socket.join(pin);
 
     salas[pin].jugadores.push({
       id: socket.id,
@@ -64,9 +44,10 @@ io.on("connection", socket => {
   });
 
   socket.on("startQuestion", ({pin, pregunta, tiempo})=>{
-    if(!salas[pin]) return;
+    const sala = salas[pin];
+    if(!sala) return;
 
-    salas[pin].preguntaActual = pregunta;
+    sala.preguntaActual = pregunta;
 
     io.to(pin).emit("question", pregunta);
 
@@ -78,7 +59,10 @@ io.on("connection", socket => {
 
       if(t <= 0){
         clearInterval(timer);
-        io.to(pin).emit("showRanking", salas[pin].jugadores.sort((a,b)=>b.puntos-a.puntos));
+
+        const ranking = sala.jugadores.sort((a,b)=>b.puntos-a.puntos);
+
+        io.to(pin).emit("ranking", ranking);
       }
 
     },1000);
