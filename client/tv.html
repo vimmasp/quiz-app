@@ -30,8 +30,36 @@ h1{
   color:#f1c40f;
 }
 
-#ranking{
+.stats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:15px;
   margin-top:20px;
+}
+
+.bar{
+  background:#333;
+  border-radius:10px;
+  overflow:hidden;
+  height:50px;
+  position:relative;
+}
+
+.fill{
+  height:100%;
+  text-align:left;
+  padding-left:10px;
+  line-height:50px;
+  font-weight:bold;
+}
+
+.red{background:#e74c3c;}
+.blue{background:#3498db;}
+.green{background:#2ecc71;}
+.yellow{background:#f1c40f;color:black;}
+
+#ranking{
+  margin-top:30px;
 }
 
 .player{
@@ -57,6 +85,9 @@ h1{
 <div id="pregunta"></div>
 <div id="timer"></div>
 
+<!-- 📊 ESTADÍSTICAS -->
+<div class="stats" id="stats"></div>
+
 <div id="ranking"></div>
 
 </div>
@@ -66,22 +97,58 @@ h1{
 <script>
 const socket = io("https://quiz-backend-liq5.onrender.com");
 
-// ❓ Mostrar pregunta
+let total = 0;
+
+// ❓ NUEVA PREGUNTA
 socket.on("question",(q)=>{
+
   document.getElementById("pregunta").innerText = q.pregunta;
   document.getElementById("ranking").innerHTML = "";
+
+  total = 0;
+
+  const colors = ["red","blue","green","yellow"];
+
+  document.getElementById("stats").innerHTML = q.opciones.map((o,i)=>
+    `<div class="bar">
+      <div id="bar${i}" class="fill ${colors[i]}" style="width:0%">
+        ${o} (0)
+      </div>
+    </div>`
+  ).join("");
 });
 
-// ⏱️ Timer
+// ⏱️ TIMER
 socket.on("timer",(t)=>{
   document.getElementById("timer").innerText = t;
 });
 
-// 🏆 Ranking final
+// 📊 AVANCE EN TIEMPO REAL
+socket.on("stats",(data)=>{
+
+  const conteo = data.conteo;
+  total = conteo.reduce((a,b)=>a+b,0);
+
+  conteo.forEach((v,i)=>{
+
+    let porcentaje = total > 0 ? (v/total)*100 : 0;
+
+    const bar = document.getElementById("bar"+i);
+
+    if(bar){
+      bar.style.width = porcentaje + "%";
+      bar.innerText = `${bar.innerText.split("(")[0]} (${v})`;
+    }
+
+  });
+});
+
+// 🏆 RANKING FINAL
 socket.on("ranking",(data)=>{
 
   document.getElementById("pregunta").innerText = "🏆 RESULTADOS";
   document.getElementById("timer").innerText = "";
+  document.getElementById("stats").innerHTML = "";
 
   document.getElementById("ranking").innerHTML =
     data.map((p,i)=>{
@@ -97,7 +164,6 @@ socket.on("ranking",(data)=>{
 
     }).join("");
 });
-
 </script>
 
 </body>
